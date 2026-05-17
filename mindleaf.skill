@@ -1,0 +1,165 @@
+# folio.skill
+# ============================================================
+# This is a SKILL FILE for Antigravity / Claude AI sessions.
+# Place this in your Antigravity skills folder so the AI
+# loads this context automatically on every session.
+#
+# If your AI tool doesn't support .skill files natively,
+# paste the contents of master-prompt.md at session start.
+# ============================================================
+
+skill:
+  name: "Folio Reader — Project Context"
+  version: "1.0.0"
+  trigger_always: true
+  priority: 100
+
+identity:
+  app_name: "Folio"
+  tagline: "Read deeply. Think clearly. Own your knowledge."
+  type: "Windows desktop PDF reader"
+  license: "MIT (open source, free)"
+
+goal: |
+  Build Folio: a free, offline, Windows-only desktop PDF reading app.
+  It is like Kindle + Notion + VLC combined — calm, clean, local-first.
+  Primary users: self-help readers, students, deep readers, note-takers.
+
+tech_stack:
+  framework: "Tauri v2 (Rust backend)"
+  frontend: "React 18 + TypeScript"
+  styling: "Tailwind CSS"
+  pdf_renderer: "PDF.js (Mozilla, bundled locally)"
+  database: "SQLite via rusqlite"
+  state: "Zustand"
+  icons: "Lucide React"
+  build: "Vite"
+
+never_use:
+  - Electron
+  - Any cloud service (Firebase, Supabase, AWS, etc.)
+  - localStorage for persistent data
+  - External fonts via CDN (use bundled Inter)
+  - Any paid library
+  - Internet calls at runtime
+  - Redux (use Zustand)
+  - Plain JavaScript files in src/ (always TypeScript)
+
+always_do:
+  - Read CLAUDE.md before writing any code
+  - Follow the file structure defined in CLAUDE.md
+  - Put Tauri commands in src-tauri/src/commands/*.rs
+  - Update db/schema.sql when adding DB tables
+  - Use invoke() from @tauri-apps/api for all backend calls
+  - Show full file content when editing (not snippets, unless >150 lines)
+  - After code, list follow-up steps
+
+platform:
+  target: "Windows 10+"
+  cross_platform: false
+  offline: true
+  size_goal: "Under 15MB installed"
+
+data_storage:
+  engine: "SQLite"
+  location: "%APPDATA%\\Folio\\folio.db"
+  schema_source: "db/schema.sql"
+  tables:
+    - books
+    - annotations
+    - reading_progress
+    - reading_sessions
+    - bookmarks
+    - tags
+    - annotation_tags
+    - app_settings
+
+features:
+  phase_1_mvp:
+    - PDF loading (drag & drop + file picker)
+    - PDF.js rendering
+    - Page navigation + zoom
+    - Dark / Light / Sepia theme toggle
+    - Remember reading position per book
+    - Bookshelf grid UI
+    - Highlighting with 5 colors (Yellow, Green, Blue, Pink, Orange)
+    - Underline and Strikethrough
+    - Sticky notes
+    - Freehand ink drawing (canvas overlay)
+    - Per-page bookmarks
+    - Insights panel (all highlights, right sidebar)
+    - Export highlights to .txt and .md
+    - Reading stats (streak, pages read, time spent)
+
+  phase_2:
+    - Full-text PDF search
+    - Annotation tags
+    - Reading heatmap
+    - Cross-book insights panel
+
+  phase_3:
+    - Knowledge graph (highlights linked across books)
+    - Smart review / spaced repetition
+    - Plugin and theme system
+
+ui_rules:
+  themes: ["dark", "light", "sepia"]
+  default_theme: "dark"
+  font: "Inter (bundled)"
+  sidebar_left_width: "240px"
+  sidebar_right_width: "280px"
+  reading_area_max_width: "900px"
+  transition_speed: "150ms ease"
+  colors:
+    accent: "#6366f1"
+    dark_bg: "#0f0f0f"
+    sepia_bg: "#f4ede4"
+  rules:
+    - No clutter — every element earns its place
+    - Controls disappear during reading (VLC style)
+    - No modals for reading actions — use inline popovers
+    - Sidebars are collapsible
+
+keyboard_shortcuts:
+  next_page: "ArrowRight or Space"
+  prev_page: "ArrowLeft"
+  jump_to_page: "Ctrl+G"
+  zoom_in: "Ctrl+="
+  zoom_out: "Ctrl+-"
+  reset_zoom: "Ctrl+0"
+  toggle_theme: "Ctrl+T"
+  highlight_mode: "H"
+  ink_mode: "D"
+  bookmark: "Ctrl+B"
+  insights: "Ctrl+I"
+  toggle_left_sidebar: "Ctrl+["
+  toggle_right_sidebar: "Ctrl+]"
+  search: "Ctrl+F"
+
+ipc_pattern: |
+  // TypeScript side (always like this):
+  import { invoke } from '@tauri-apps/api/tauri';
+  const result = await invoke<ReturnType>('command_name', { param1, param2 });
+
+  // Rust side (always like this):
+  #[tauri::command]
+  async fn command_name(param1: Type, state: tauri::State<'_, AppState>) -> Result<ReturnType, String> { ... }
+
+stats_logic:
+  session: "Starts when book opens, ends when closed or app loses focus for >5 min"
+  streak: "Consecutive days with >= 1 session of >= 5 minutes"
+  pages_read: "Incremented when user navigates away from a page"
+  time_spent: "Wall-clock time while reader window is focused"
+
+context_recovery: |
+  If context is lost mid-session, re-read in this order:
+  1. CLAUDE.md         (full project spec)
+  2. master-prompt.md  (session starter)
+  3. db/schema.sql     (database structure)
+  Then confirm understanding before continuing.
+
+session_start_checklist:
+  - Read CLAUDE.md ✓
+  - Confirm tech stack understood ✓
+  - Check current phase (Phase 1 MVP) ✓
+  - Ask user what to build next ✓
