@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS books (
     total_pages     INTEGER NOT NULL DEFAULT 0,
     file_size_bytes INTEGER NOT NULL DEFAULT 0,
     author          TEXT,                       -- Extracted from PDF metadata
+    cover_color     TEXT    NOT NULL DEFAULT '#2d2b55', -- Hex color for card UI
     date_added      TEXT    NOT NULL DEFAULT (datetime('now')),
     last_opened     TEXT,
     is_favorite     INTEGER NOT NULL DEFAULT 0  -- 0 = no, 1 = yes

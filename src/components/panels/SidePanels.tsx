@@ -1,38 +1,56 @@
-import { Bookmark, ArrowRight } from 'lucide-react';
-import { Lightbulb } from 'lucide-react';
+import { useEffect } from 'react';
+import { Bookmark, ArrowRight, Lightbulb } from 'lucide-react';
+import { useAnnotationStore } from '../../store/annotationStore';
+import { useReaderStore } from '../../store/readerStore';
 
 // ─── Insights Panel ───────────────────────────────────────────
-const HIGHLIGHTS = [
-  { text: 'The happiness of your life depends upon the quality of your thoughts: therefore, guard accordingly.', note: 'A reminder to practice negative visualization when feeling overwhelmed by external expectations.', color: '#fde68a', book: 'Meditations' },
-  { text: 'Who you are, what you think, feel, and do, what you love—is the sum of what you focus on.', note: null, color: '#86efac', book: 'Deep Work' },
-  { text: 'The brain is a dynamic system, constantly reconfiguring its own circuitry to match the demands of the environment.', note: 'Connect this with neuroplasticity section in the upcoming essay on habit formation.', color: '#93c5fd', book: 'Atomic Habits' },
-  { text: 'You do not rise to the level of your goals. You fall to the level of your systems.', note: null, color: '#f9a8d4', book: 'Atomic Habits' },
-];
+export function InsightsPanel({ bookId }: { bookId: number }) {
+  const { annotations, loadAnnotations } = useAnnotationStore();
 
-export function InsightsPanel() {
+  useEffect(() => {
+    loadAnnotations(bookId);
+  }, [bookId]);
+
+  const highlights = annotations.filter(a =>
+    a.annotation_type === 'highlight' || a.annotation_type === 'underline'
+  );
+
   return (
     <div className="panel glass">
       <div className="panel-header">
         <div className="panel-header-icon"><Lightbulb size={16} strokeWidth={1.5} /></div>
         <div>
-          <div className="text-headline-sm">My Insights</div>
-          <div className="text-caption text-muted">147 highlights across 12 books</div>
+          <div className="text-headline-sm">Insights</div>
+          <div className="text-caption text-muted">{highlights.length} highlight{highlights.length !== 1 ? 's' : ''}</div>
         </div>
       </div>
 
       <div className="panel-items">
-        {HIGHLIGHTS.map((h, i) => (
-          <div key={i} className="highlight-item" style={{ borderLeftColor: h.color }}>
-            <div className="highlight-text text-body-md">"{h.text}"</div>
-            {h.note && (
+        {highlights.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '32px 16px', color: 'var(--on-surface-60)' }}>
+            <Lightbulb size={24} strokeWidth={1} style={{ marginBottom: 8, opacity: 0.4 }} />
+            <p className="text-body-md">No highlights yet</p>
+            <p className="text-caption text-muted" style={{ marginTop: 4 }}>
+              Select text in the reader to highlight
+            </p>
+          </div>
+        )}
+        {highlights.map(h => (
+          <div
+            key={h.id}
+            className="highlight-item"
+            style={{ borderLeftColor: h.color ?? '#fde68a' }}
+          >
+            <div className="highlight-text text-body-md">"{h.selected_text}"</div>
+            {h.note_content && (
               <div className="highlight-note">
                 <div className="highlight-note-label text-label-md text-muted">MY NOTE</div>
-                <div className="highlight-note-text text-body-md text-muted">{h.note}</div>
+                <div className="highlight-note-text text-body-md text-muted">{h.note_content}</div>
               </div>
             )}
             <div className="highlight-book text-caption text-muted">
               <ArrowRight size={10} strokeWidth={2} style={{ display: 'inline', marginRight: 4 }} />
-              {h.book}
+              Page {h.page_number}
             </div>
           </div>
         ))}
@@ -42,29 +60,48 @@ export function InsightsPanel() {
 }
 
 // ─── Bookmarks Panel ─────────────────────────────────────────
-const BOOKMARKS = [
-  { page: 47,  excerpt: 'Key insight on identity-based habits and why they outlast motivation-based habits.' },
-  { page: 112, excerpt: 'The Plateau of Latent Potential diagram.' },
-  { page: 158, excerpt: 'Notes on environment design strategy.' },
-  { page: 203, excerpt: 'Goldilocks Rule for motivation.' },
-];
+interface BookmarksPanelProps {
+  bookId: number;
+  onGoToPage?: (page: number) => void;
+}
 
-export function BookmarksPanel({ bookTitle = 'Atomic Habits' }: { bookTitle?: string }) {
+export function BookmarksPanel({ bookId, onGoToPage }: BookmarksPanelProps) {
+  const { bookmarks, loadBookmarks } = useReaderStore();
+
+  useEffect(() => {
+    loadBookmarks(bookId);
+  }, [bookId]);
+
   return (
     <div className="panel glass">
       <div className="panel-header">
         <div className="panel-header-icon"><Bookmark size={16} strokeWidth={1.5} /></div>
         <div>
           <div className="text-headline-sm">Bookmarks</div>
-          <div className="text-caption text-muted">{bookTitle}</div>
+          <div className="text-caption text-muted">{bookmarks.length} page{bookmarks.length !== 1 ? 's' : ''} saved</div>
         </div>
       </div>
 
       <div className="panel-items">
-        {BOOKMARKS.map((bm, i) => (
-          <div key={i} className="bookmark-item">
-            <div className="bookmark-page text-label-md">Page {bm.page}</div>
-            <div className="bookmark-excerpt text-body-md text-muted">{bm.excerpt}</div>
+        {bookmarks.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '32px 16px', color: 'var(--on-surface-60)' }}>
+            <Bookmark size={24} strokeWidth={1} style={{ marginBottom: 8, opacity: 0.4 }} />
+            <p className="text-body-md">No bookmarks yet</p>
+            <p className="text-caption text-muted" style={{ marginTop: 4 }}>
+              Press Ctrl+B to bookmark a page
+            </p>
+          </div>
+        )}
+        {bookmarks.map(bm => (
+          <div
+            key={bm.id}
+            className="bookmark-item"
+            onClick={() => onGoToPage?.(bm.page_number)}
+          >
+            <div className="bookmark-page text-label-md">Page {bm.page_number}</div>
+            <div className="bookmark-excerpt text-body-md text-muted">
+              {bm.label ?? 'Bookmarked page'}
+            </div>
           </div>
         ))}
       </div>

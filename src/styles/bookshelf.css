@@ -1,4 +1,69 @@
 /* ─── Bookshelf ──────────────────────────────────────────────── */
+
+/* Empty State */
+.bookshelf-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--on-surface);
+}
+
+/* Book card hover actions */
+.book-card-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.book-card:hover .book-card-actions { opacity: 1; }
+
+.book-action-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.book-action-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+.book-action-btn.active { color: var(--accent); }
+.book-action-btn.danger.confirming { background: rgba(239,68,68,0.6); color: #fff; }
+
+/* Spinning loader */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinning { animation: spin 1s linear infinite; color: var(--accent); }
+
+/* Modal error */
+.modal-error {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  color: #fca5a5;
+  font-size: 13px;
+}
+
+/* Drop zone dragging state */
+.drop-zone.dragging {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  transform: scale(1.01);
+}
 .bookshelf {
   flex: 1;
   overflow-y: auto;

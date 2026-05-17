@@ -1,58 +1,138 @@
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Sun, Bookmark, RotateCcw } from 'lucide-react';
+import { useEffect, useRef, useCallback } from 'react';
+import {
+  ChevronLeft, ChevronRight, ZoomIn, ZoomOut,
+  Bookmark, RotateCcw, BookOpen
+} from 'lucide-react';
+import { useReaderStore } from '../../store/readerStore';
+import { useBookStore } from '../../store/bookStore';
 import { InsightsPanel, BookmarksPanel } from '../panels/SidePanels';
-
-const DEMO_TEXT = `Chapter 3: How to Build Better Habits in 4 Simple Steps
-
-The process of building a habit can be divided into four simple steps: cue, craving, response, and reward. Breaking it down into these fundamental parts can help us understand what a habit is, how it works, and how to improve it.
-
-All habits proceed through four stages in the same order: cue, craving, response, and reward.
-
-This four-step pattern is the backbone of every habit, and your brain runs through these steps in the same order each time. First, there is the cue. The cue triggers your brain to initiate a behavior. It is a bit of information that predicts a reward.
-
-Your mind is continuously analyzing your internal and external environment for hints of where rewards are located.
-
-Consider the following hypothesis: that consciousness is not an emergent property of biological matter, but rather the primary substrate of reality itself, through which matter is filtered and observed. This ontological shift demands a rigorous re-examination of how we quantify subjective states.
-
-Modern analytical frameworks often fail to account for the "internal horizon" of the observer. When we study the brain, we are looking at the mechanism of the projector, rather than the film being shown. This distinction is crucial for any reader of post-phenomenological texts.`;
+import { usePDF } from '../../hooks/usePDF';
+import type { Book } from '../../types';
 
 interface Props {
-  bookTitle?: string;
+  book: Book;
   rightPanel?: 'insights' | 'bookmarks' | null;
-  onTogglePanel?: (panel: 'insights' | 'bookmarks') => void;
+  onTogglePanel?: (_panel: 'insights' | 'bookmarks') => void;
 }
 
-export default function PDFReader({ bookTitle = 'Atomic Habits', rightPanel = 'insights', onTogglePanel }: Props) {
+const ZOOM_STEP = 0.25;
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 3.0;
+
+export default function PDFReader({ book, rightPanel = 'bookmarks', onTogglePanel: _onTogglePanel }: Props) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const {
+    currentPage, totalPages, zoomLevel,
+    setPage, setTotalPages, setZoom,
+    loadProgress, saveProgress,
+    loadBookmarks, toggleBookmark, isPageBookmarked,
+    startSession, endSession,
+  } = useReaderStore();
+
+  const { markOpened } = useBookStore();
+
+  // Load progress + bookmarks on mount, start session
+  useEffect(() => {
+    loadProgress(book.id);
+    loadBookmarks(book.id);
+    markOpened(book.id);
+    startSession(book.id);
+    return () => {
+      endSession(book.id);
+      saveProgress();
+    };
+  }, [book.id]);
+
+  // PDF.js rendering
+  usePDF({
+    filePath: book.file_path,
+    canvasRef,
+    page: currentPage,
+    zoom: zoomLevel,
+    onPageCount: setTotalPages,
+  });
+
+  // Debounced progress save
+  const debouncedSave = useCallback(() => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => saveProgress(), 1500);
+  }, [saveProgress]);
+
+  // Page navigation
+  const goTo = useCallback((p: number) => {
+    const clamped = Math.max(1, Math.min(p, totalPages || 9999));
+    setPage(clamped);
+    debouncedSave();
+  }, [totalPages, setPage, debouncedSave]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goTo(currentPage + 1); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(currentPage - 1); }
+      if (e.ctrlKey && e.key === '=') { e.preventDefault(); setZoom(Math.min(zoomLevel + ZOOM_STEP, ZOOM_MAX)); }
+      if (e.ctrlKey && e.key === '-') { e.preventDefault(); setZoom(Math.max(zoomLevel - ZOOM_STEP, ZOOM_MIN)); }
+      if (e.ctrlKey && e.key === '0') { e.preventDefault(); setZoom(1.0); }
+      if (e.ctrlKey && e.key === 'b') { e.preventDefault(); toggleBookmark(book.id, currentPage); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [currentPage, zoomLevel, book.id, goTo, setZoom, toggleBookmark]);
+
+  const bookmarked = isPageBookmarked(currentPage);
+
   return (
     <div className="reader-shell">
       {/* Top Bar */}
       <div className="reader-topbar glass">
         <div className="reader-topbar-left">
-          <span className="text-body-md text-muted">MindLeaf</span>
-          <span className="text-body-md text-muted" style={{ opacity: 0.4 }}>·</span>
-          <span className="text-body-md">{bookTitle}</span>
+          <BookOpen size={16} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
+          <span className="text-body-md text-muted" style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {book.title}
+          </span>
         </div>
+
         <div className="reader-topbar-center">
-          <button className="btn-icon" id="prev-page-btn"><ChevronLeft size={18} strokeWidth={1.5} /></button>
+          <button className="btn-icon" id="prev-page-btn" onClick={() => goTo(currentPage - 1)} disabled={currentPage <= 1}>
+            <ChevronLeft size={18} strokeWidth={1.5} />
+          </button>
           <div className="page-indicator glass">
-            <span className="text-body-md">Page 47</span>
-            <span className="text-muted text-body-md">/ 320</span>
+            <input
+              id="page-input"
+              type="number"
+              value={currentPage}
+              onChange={e => goTo(Number(e.target.value))}
+              style={{
+                background: 'none', border: 'none', outline: 'none',
+                color: 'var(--on-surface)', textAlign: 'center',
+                width: 48, fontFamily: 'inherit', fontSize: 14,
+              }}
+              min={1}
+              max={totalPages || undefined}
+            />
+            <span className="text-muted text-body-md">/ {totalPages || '—'}</span>
           </div>
-          <button className="btn-icon" id="next-page-btn"><ChevronRight size={18} strokeWidth={1.5} /></button>
+          <button className="btn-icon" id="next-page-btn" onClick={() => goTo(currentPage + 1)} disabled={totalPages > 0 && currentPage >= totalPages}>
+            <ChevronRight size={18} strokeWidth={1.5} />
+          </button>
         </div>
+
         <div className="reader-topbar-right">
-          <button className="btn-icon" id="zoom-out-btn"><ZoomOut size={16} strokeWidth={1.5} /></button>
-          <span className="text-caption text-muted" style={{ minWidth: 36, textAlign: 'center' }}>100%</span>
-          <button className="btn-icon" id="zoom-in-btn"><ZoomIn size={16} strokeWidth={1.5} /></button>
+          <button className="btn-icon" id="zoom-out-btn" onClick={() => setZoom(Math.max(zoomLevel - ZOOM_STEP, ZOOM_MIN))}><ZoomOut size={16} strokeWidth={1.5} /></button>
+          <span className="text-caption text-muted" style={{ minWidth: 40, textAlign: 'center' }}>{Math.round(zoomLevel * 100)}%</span>
+          <button className="btn-icon" id="zoom-in-btn" onClick={() => setZoom(Math.min(zoomLevel + ZOOM_STEP, ZOOM_MAX))}><ZoomIn size={16} strokeWidth={1.5} /></button>
+          <button className="btn-icon" title="Reset zoom (Ctrl+0)" onClick={() => setZoom(1.0)}><RotateCcw size={16} strokeWidth={1.5} /></button>
           <div className="topbar-divider" />
-          <button className="btn-icon" title="Reset zoom"><RotateCcw size={16} strokeWidth={1.5} /></button>
-          <button className="btn-icon" title="Theme"><Sun size={16} strokeWidth={1.5} /></button>
           <button
-            className={`btn-icon ${rightPanel === 'bookmarks' ? 'active' : ''}`}
-            title="Bookmarks"
-            id="bookmarks-panel-btn"
-            onClick={() => onTogglePanel?.('bookmarks')}
+            className={`btn-icon ${bookmarked ? 'active' : ''}`}
+            title={bookmarked ? 'Remove bookmark (Ctrl+B)' : 'Bookmark page (Ctrl+B)'}
+            id="bookmark-btn"
+            onClick={() => toggleBookmark(book.id, currentPage)}
           >
-            <Bookmark size={16} strokeWidth={1.5} />
+            <Bookmark size={16} strokeWidth={1.5} fill={bookmarked ? 'currentColor' : 'none'} />
           </button>
         </div>
       </div>
@@ -61,25 +141,14 @@ export default function PDFReader({ bookTitle = 'Atomic Habits', rightPanel = 'i
       <div className="reader-content">
         {/* PDF Viewport */}
         <div className="pdf-viewport">
-          <div className="pdf-page glass">
-            <div className="pdf-content">
-              {DEMO_TEXT.split('\n\n').map((para, i) => (
-                para.startsWith('Chapter') ? (
-                  <h2 key={i} className="pdf-chapter-title">{para}</h2>
-                ) : (
-                  <p key={i} className="pdf-paragraph">{para}</p>
-                )
-              ))}
-            </div>
+          <div className="pdf-page-wrapper">
+            <canvas ref={canvasRef} className="pdf-canvas" />
           </div>
         </div>
 
         {/* Right Panel */}
-        {rightPanel && (
-          rightPanel === 'insights'
-            ? <InsightsPanel />
-            : <BookmarksPanel bookTitle={bookTitle} />
-        )}
+        {rightPanel === 'insights' && <InsightsPanel bookId={book.id} />}
+        {rightPanel === 'bookmarks' && <BookmarksPanel bookId={book.id} onGoToPage={goTo} />}
       </div>
     </div>
   );
