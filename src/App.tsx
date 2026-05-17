@@ -1,51 +1,77 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import { useState } from 'react';
+import LeftSidebar, { type NavView } from './components/layout/LeftSidebar';
+import Bookshelf, { type Book } from './components/library/Bookshelf';
+import AddBookModal from './components/library/AddBookModal';
+import PDFReader from './components/reader/PDFReader';
+import StatsPanel from './components/stats/StatsPanel';
+import { InsightsPanel, BookmarksPanel } from './components/panels/SidePanels';
 
-function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+export default function App() {
+  const [activeView, setActiveView] = useState<NavView>('bookshelf');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [openBook, setOpenBook] = useState<Book | null>(null);
+  const [readerPanel, setReaderPanel] = useState<'insights' | 'bookmarks'>('insights');
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
+  const handleOpenBook = (book: Book) => {
+    setOpenBook(book);
+    setActiveView('reader');
+  };
+
+  const toggleReaderPanel = (panel: 'insights' | 'bookmarks') => {
+    setReaderPanel(prev => prev === panel ? 'insights' : panel);
+  };
+
+  const renderMain = () => {
+    switch (activeView) {
+      case 'bookshelf':
+        return <Bookshelf onOpenBook={handleOpenBook} onAddBook={() => setShowAddModal(true)} />;
+      case 'reader':
+        return (
+          <PDFReader
+            bookTitle={openBook?.title ?? 'Atomic Habits'}
+            rightPanel={readerPanel}
+            onTogglePanel={toggleReaderPanel}
+          />
+        );
+      case 'insights':
+        return (
+          <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+            <div style={{ flex: 1, overflow: 'auto', padding: 40 }}>
+              <h1 className="text-headline-lg" style={{ marginBottom: 24 }}>My Insights</h1>
+              <p className="text-body-md text-muted">147 highlights across 12 books</p>
+            </div>
+            <InsightsPanel />
+          </div>
+        );
+      case 'bookmarks':
+        return (
+          <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+            <div style={{ flex: 1, overflow: 'auto', padding: 40 }}>
+              <h1 className="text-headline-lg" style={{ marginBottom: 24 }}>Bookmarks</h1>
+              <p className="text-body-md text-muted">All your saved pages across books</p>
+            </div>
+            <BookmarksPanel />
+          </div>
+        );
+      case 'stats':
+        return <StatsPanel />;
+      case 'settings':
+        return (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ textAlign: 'center' }}>
+              <h1 className="text-headline-lg" style={{ marginBottom: 8 }}>Settings</h1>
+              <p className="text-body-md text-muted">Coming in Phase 2</p>
+            </div>
+          </div>
+        );
+    }
+  };
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
-
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+    <div className="app-shell">
+      <LeftSidebar activeView={activeView} onNavigate={v => { setActiveView(v); }} />
+      {renderMain()}
+      {showAddModal && <AddBookModal onClose={() => setShowAddModal(false)} />}
+    </div>
   );
 }
-
-export default App;

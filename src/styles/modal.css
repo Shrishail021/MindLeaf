@@ -1,0 +1,87 @@
+/* ─── Modal ──────────────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 150ms ease;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.modal-panel {
+  width: 480px;
+  max-width: 90vw;
+  border-radius: var(--radius-xl);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  animation: slideUp 200ms ease;
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+/* Drop Zone */
+.drop-zone {
+  border: 1.5px dashed rgba(99, 102, 241, 0.4);
+  border-radius: var(--radius-lg);
+  padding: 40px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease;
+}
+
+.drop-zone:hover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.drop-zone-icon {
+  color: var(--accent);
+  margin-bottom: 8px;
+  opacity: 0.8;
+}
+
+/* Recent */
+.modal-recent {
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-recent-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  transition: background 150ms ease;
+  cursor: pointer;
+}
+
+.modal-recent-item:hover { background: rgba(255,255,255,0.06); }
+
+.modal-recent-cover {
+  width: 32px;
+  height: 44px;
+  border-radius: 4px;
+  background: var(--surface-high);
+  border: 1px solid var(--glass-border);
+  flex-shrink: 0;
+}

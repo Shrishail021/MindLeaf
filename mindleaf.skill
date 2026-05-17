@@ -1,4 +1,4 @@
-# folio.skill
+# mindleaf.skill
 # ============================================================
 # This is a SKILL FILE for Antigravity / Claude AI sessions.
 # Place this in your Antigravity skills folder so the AI
@@ -9,19 +9,19 @@
 # ============================================================
 
 skill:
-  name: "Folio Reader — Project Context"
+  name: "MindLeaf Reader — Project Context"
   version: "1.0.0"
   trigger_always: true
   priority: 100
 
 identity:
-  app_name: "Folio"
+  app_name: "MindLeaf Reader"
   tagline: "Read deeply. Think clearly. Own your knowledge."
   type: "Windows desktop PDF reader"
   license: "MIT (open source, free)"
 
 goal: |
-  Build Folio: a free, offline, Windows-only desktop PDF reading app.
+  Build MindLeaf Reader: a free, offline, Windows-only desktop PDF reading app.
   It is like Kindle + Notion + VLC combined — calm, clean, local-first.
   Primary users: self-help readers, students, deep readers, note-takers.
 
